@@ -10,7 +10,7 @@ export const createTask = async (req, res) => {
       description,
       dueDate,
       priority,
-      assignedTo: req.user.id,
+      assignedTo: req.user.role === "admin" && req.body.assignedTo ? req.body.assignedTo : req.user.id,
     });
 
     res.status(201).json(task);
@@ -26,12 +26,14 @@ export const getTasks = async (req, res) => {
     const limit = 5;
     const skip = (page - 1) * limit;
 
-    const tasks = await Task.find({ assignedTo: req.user.id })
+    const query = req.user.role === "admin" ? {} : { assignedTo: req.user.id };
+
+    const tasks = await Task.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await Task.countDocuments({ assignedTo: req.user.id });
+    const total = await Task.countDocuments(query);
 
     res.json({
       tasks,
@@ -46,10 +48,8 @@ export const getTasks = async (req, res) => {
 // GET SINGLE TASK
 export const getTaskById = async (req, res) => {
   try {
-    const task = await Task.findOne({
-      _id: req.params.id,
-      assignedTo: req.user.id,
-    });
+    const query = req.user.role === "admin" ? { _id: req.params.id } : { _id: req.params.id, assignedTo: req.user.id };
+    const task = await Task.findOne(query);
 
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
@@ -64,8 +64,9 @@ export const getTaskById = async (req, res) => {
 // UPDATE TASK
 export const updateTask = async (req, res) => {
   try {
+    const query = req.user.role === "admin" ? { _id: req.params.id } : { _id: req.params.id, assignedTo: req.user.id };
     const task = await Task.findOneAndUpdate(
-      { _id: req.params.id, assignedTo: req.user.id },
+      query,
       req.body,
       { new: true }
     );
@@ -83,10 +84,8 @@ export const updateTask = async (req, res) => {
 // DELETE TASK
 export const deleteTask = async (req, res) => {
   try {
-    const task = await Task.findOneAndDelete({
-      _id: req.params.id,
-      assignedTo: req.user.id,
-    });
+    const query = req.user.role === "admin" ? { _id: req.params.id } : { _id: req.params.id, assignedTo: req.user.id };
+    const task = await Task.findOneAndDelete(query);
 
     if (!task) {
       return res.status(404).json({ message: "Task not found" });
@@ -103,8 +102,9 @@ export const updateTaskStatus = async (req, res) => {
   try {
     const { status } = req.body;
 
+    const query = req.user.role === "admin" ? { _id: req.params.id } : { _id: req.params.id, assignedTo: req.user.id };
     const task = await Task.findOneAndUpdate(
-      { _id: req.params.id, assignedTo: req.user.id },
+      query,
       { status },
       { new: true }
     );

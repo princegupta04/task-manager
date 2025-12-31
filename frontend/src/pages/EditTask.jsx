@@ -12,9 +12,18 @@ const EditTask = () => {
     description: "",
     dueDate: "",
     priority: "medium",
+    assignedTo: "",
   });
+  const [users, setUsers] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user && user.role === "admin") {
+      setIsAdmin(true);
+      api.get("/users").then((res) => setUsers(res.data));
+    }
+
     api.get(`/tasks/${id}`).then((res) =>
       setTask({
         ...res.data,
@@ -96,6 +105,32 @@ const EditTask = () => {
               </select>
             </div>
           </div>
+
+          {isAdmin && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ fontWeight: '600', fontSize: '0.9rem' }}>Assign To (Admin Only)</label>
+              <select 
+                value={task.assignedTo || ""}
+                onChange={(e) => setTask({ ...task, assignedTo: e.target.value })}
+                style={{
+                  backgroundColor: 'var(--color-bg)',
+                  color: 'var(--color-text)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius)',
+                  padding: '0.5rem 1rem',
+                  fontSize: '1rem',
+                  height: '42px'
+                }}
+              >
+                <option value="">Select User</option>
+                {users.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {user.name} ({user.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
              <button type="button" onClick={() => navigate(`/task/${id}`)} style={{ flex: 1, backgroundColor: 'transparent', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>Cancel</button>
