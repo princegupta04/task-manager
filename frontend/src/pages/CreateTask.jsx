@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
@@ -8,7 +8,18 @@ const CreateTask = () => {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("medium");
+  const [assignedTo, setAssignedTo] = useState("");
+  const [users, setUsers] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user && user.role === "admin") {
+      setIsAdmin(true);
+      api.get("/users").then((res) => setUsers(res.data));
+    }
+  }, []);
 
   const submitHandler = async (e) => {
     e.preventDefault();
@@ -17,6 +28,7 @@ const CreateTask = () => {
       description,
       dueDate,
       priority,
+      assignedTo: isAdmin && assignedTo ? assignedTo : undefined,
     });
     navigate("/");
   };
@@ -82,6 +94,31 @@ const CreateTask = () => {
               </select>
             </div>
           </div>
+
+          {isAdmin && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ fontWeight: '600', fontSize: '0.9rem' }}>Assign To (Admin Only)</label>
+              <select 
+                onChange={(e) => setAssignedTo(e.target.value)}
+                style={{
+                  backgroundColor: 'var(--color-bg)',
+                  color: 'var(--color-text)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius)',
+                  padding: '0.5rem 1rem',
+                  fontSize: '1rem',
+                  height: '42px'
+                }}
+              >
+                <option value="">Select User (Optional)</option>
+                {users.map((user) => (
+                  <option key={user._id} value={user._id}>
+                    {user.name} ({user.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
              <button type="button" onClick={() => navigate('/')} style={{ flex: 1, backgroundColor: 'transparent', color: 'var(--color-text)', border: '1px solid var(--color-border)' }}>Cancel</button>
